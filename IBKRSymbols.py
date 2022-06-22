@@ -8,8 +8,8 @@ list_assets = [['SPX','CBOE'],['DAX','DTB'],['CL','NYSE'],['NG','NYMEX'],['VIX',
 def getSymbols(asset, expiration, start_strike, number, option_type):
     df = pd.DataFrame(columns=['Name','Strike','Exchange','Type'])
 
-    # date format as 21/01/22 (21 Jan 2022)
-    date_time_obj = datetime.strptime(expiration, '%d/%m/%y')
+    # date format as 2022.06.23 (21 Jan 2022)
+    date_time_obj = datetime.strptime(expiration, '%Y.%m.%d')
     _year = date_time_obj.strftime('%y')
     _month = date_time_obj.strftime('%b')
     _month_num = date_time_obj.strftime('%m')
@@ -23,7 +23,7 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
             if option_type == "PUT" or option_type == "put":
                 _name = "P ODIV "+str(_month).upper()+" "+str(_year)+" "+str((start_strike+_temp_num))
             
-            df.loc[i] = [_name,(start_strike+_temp_num),"DTB",str(option_type).upper()] 
+            df.loc[i] = [_name,(start_strike+_temp_num),"DTB",str("OPT").upper()] 
             _temp_num+=5
         print(df)
     if asset == "SPX":
@@ -34,7 +34,7 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
             if option_type == "PUT" or option_type == "put":
                 _name = "SPXW "+str(_year)+str(_month_num).upper()+str(_day).upper()+"P0"+str((start_strike+_temp_num))+"000"
             
-            df.loc[i] = [_name,(start_strike+_temp_num),"DTB",str(option_type).upper()] 
+            df.loc[i] = [_name,(start_strike+_temp_num),"DTB",str("OPT").upper()] 
             if (start_strike+_temp_num) < 2800 or ((start_strike+_temp_num) >= 4600 and (start_strike+_temp_num) <= 5000):
                 _temp_num+=200
                 continue
@@ -74,7 +74,7 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
             if option_type == "PUT" or option_type == "put":
                 _name = "P OVS2 "+str(_month).upper()+" "+str(_year)+" "+str((start_strike+_temp_num))
             
-            df.loc[i] = [_name,(start_strike+_temp_num),"DTB",str(option_type).upper()] 
+            df.loc[i] = [_name,(start_strike+_temp_num),"DTB",str("OPT").upper()] 
             if (start_strike+_temp_num) < 15:
                 _temp_num+=0.5
                 continue
@@ -123,5 +123,5 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
         print(df)
 
     
-getSymbols("SPX","23/06/22",4145,23,"call")
+getSymbols("DAX","2022.08.23",20,10,"call")
     
