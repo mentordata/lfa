@@ -99,40 +99,22 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
                 _name = "P OEXD "+str(_month).upper()+" "+str(_year)+" "+str((start_strike+_temp_num))
             
             df.loc[i] = [_name,(start_strike+_temp_num),"DTB",str(option_type).upper()] 
-            if (start_strike+_temp_num) < 80:
+            if (start_strike+_temp_num) < 80 or ((start_strike+_temp_num) >= 85 and (start_strike+_temp_num) < 100):
                 _temp_num+=5
                 continue
-            if (start_strike+_temp_num) == 80:
+            if (start_strike+_temp_num) == 80 or (start_strike+_temp_num) == 132:
                 _temp_num+=3
                 continue
-            if (start_strike+_temp_num) == 83:
-                _temp_num+=2
-                continue
-            if (start_strike+_temp_num) >= 85 and (start_strike+_temp_num) < 100:
-                _temp_num+=5
-                continue
-            if (start_strike+_temp_num) == 100:
+            if (start_strike+_temp_num) == 83 or (start_strike+_temp_num) == 100 or (start_strike+_temp_num) == 110 or (start_strike+_temp_num) == 130:
                 _temp_num+=2
                 continue
             if (start_strike+_temp_num) >= 102 and (start_strike+_temp_num) < 110:
                 _temp_num+=1
                 continue
-            if (start_strike+_temp_num) == 110:
-                _temp_num+=2
-                continue
             if (start_strike+_temp_num) >= 112 and (start_strike+_temp_num) < 125:
                 _temp_num+=1
                 continue
-            if (start_strike+_temp_num) == 125:
-                _temp_num+=5
-                continue
-            if (start_strike+_temp_num) == 130:
-                _temp_num+=2
-                continue
-            if (start_strike+_temp_num) == 132:
-                _temp_num+=3
-                continue
-            if (start_strike+_temp_num) == 135:
+            if (start_strike+_temp_num) == 125 or (start_strike+_temp_num) == 135:
                 _temp_num+=5
                 continue
             if (start_strike+_temp_num) == 140:
