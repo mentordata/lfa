@@ -1,0 +1,8 @@
+id,symbol,exchange,type,step,side,trade
+1,C ODAX JUL 22 13000,DTB,OPT,1,buy,False
+2,C ODAX JUL 22 13050,DTB,OPT,1,buy,True
+3,C ODAX JUL 22 13100,DTB,OPT,1,buy,False
+4,C ODAX JUL 22 13150,DTB,OPT,1,buy,True
+5,C ODAX JUL 22 13200,DTB,OPT,1,buy,False
+6,C ODAX JUL 22 13250,DTB,OPT,1,buy,True
+7,C ODAX JUL 22 13300,DTB,OPT,1,buy,False
