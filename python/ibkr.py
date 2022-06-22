@@ -3,7 +3,7 @@
 """
 Created on Fri Jun  3 12:29:58 2022
 
-@author: esmx
+@author: Hanna Poplawska for LFA
 """
 import pandas as pd
 import sys
