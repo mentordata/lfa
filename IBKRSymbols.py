@@ -8,7 +8,7 @@ list_assets = [['SPX','CBOE'],['DAX','DTB'],['CL','NYSE'],['NG','NYMEX'],['VIX',
 def getSymbols(asset, expiration, start_strike, number, option_type):
     df = pd.DataFrame(columns=['Name','Strike','Exchange','Type'])
 
-    # date format as 2022.06.23 (21 Jan 2022)
+    # date format as 2022.06.23 (23 JUN 2022)
     date_time_obj = datetime.strptime(expiration, '%Y.%m.%d')
     _year = date_time_obj.strftime('%y')
     _month = date_time_obj.strftime('%b')
@@ -34,7 +34,7 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
             if option_type == "PUT" or option_type == "put":
                 _name = "SPXW "+str(_year)+str(_month_num).upper()+str(_day).upper()+"P0"+str((start_strike+_temp_num))+"000"
             
-            df.loc[i] = [_name,(start_strike+_temp_num),"DTB",str("OPT").upper()] 
+            df.loc[i] = [_name,(start_strike+_temp_num),"CBOE",str("OPT").upper()] 
             if (start_strike+_temp_num) < 2800 or ((start_strike+_temp_num) >= 4600 and (start_strike+_temp_num) <= 5000):
                 _temp_num+=200
                 continue
