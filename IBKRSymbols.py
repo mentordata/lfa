@@ -12,13 +12,14 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
     date_time_obj = datetime.strptime(expiration, '%d/%m/%y')
     _year = date_time_obj.strftime('%y')
     _month = date_time_obj.strftime('%b')
+    _month_num = date_time_obj.strftime('%m')
     _day = date_time_obj.strftime('%d')
    
     if asset == "DAX":
         _temp_num = 0
         for i in range(number):
             if option_type == "CALL" or option_type == "call":
-                _name = "C ODIV"+str(_month).upper()+str(_year)+str((start_strike+_temp_num))
+                _name = "C ODIV "+str(_month).upper()+" "+str(_year)+" "+str((start_strike+_temp_num))
             if option_type == "PUT" or option_type == "put":
                 _name = "P ODIV "+str(_month).upper()+" "+str(_year)+" "+str((start_strike+_temp_num))
             
@@ -29,12 +30,35 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
         _temp_num = 0
         for i in range(number):
             if option_type == "CALL" or option_type == "call":
-                _name = "SPXW "+str(_month).upper()+str(_year)+str((start_strike+_temp_num))
+                _name = "SPXW "+str(_year)+str(_month_num).upper()+str(_day).upper()+"C0"+str((start_strike+_temp_num))+"000"
             if option_type == "PUT" or option_type == "put":
-                _name = "P ODIV "+str(_month).upper()+" "+str(_year)+" "+str((start_strike+_temp_num))
+                _name = "SPXW "+str(_year)+str(_month_num).upper()+str(_day).upper()+"P0"+str((start_strike+_temp_num))+"000"
             
             df.loc[i] = [_name,(start_strike+_temp_num),"DTB",str(option_type).upper()] 
-            _temp_num+=5
+            if (start_strike+_temp_num) < 2800 or ((start_strike+_temp_num) >= 4600 and (start_strike+_temp_num) <= 5000):
+                _temp_num+=200
+                continue
+            if (start_strike+_temp_num) == 2800 or ((start_strike+_temp_num) >= 4300 and (start_strike+_temp_num) < 4600):
+                _temp_num+=100
+                continue
+            if (start_strike+_temp_num) >= 2900 and (start_strike+_temp_num) < 3350:
+                _temp_num+=50
+                continue
+            if ((start_strike+_temp_num) >= 3350 and (start_strike+_temp_num) < 3425) or ((start_strike+_temp_num) >= 4250 and (start_strike+_temp_num) < 4300):
+                _temp_num+=25
+                continue
+            if (start_strike+_temp_num) == 3425:
+                _temp_num+=15
+                continue
+            if ((start_strike+_temp_num) >= 3440 and (start_strike+_temp_num) < 3470) or ((start_strike+_temp_num) >= 3480 and (start_strike+_temp_num) < 3510) or ((start_strike+_temp_num) >= 4180 and (start_strike+_temp_num) < 4220) or ((start_strike+_temp_num) >= 4230 and (start_strike+_temp_num) < 4250):
+                _temp_num+=10
+                continue
+            if ((start_strike+_temp_num) >= 3470 and (start_strike+_temp_num) < 3480) or ((start_strike+_temp_num) >= 3510 and (start_strike+_temp_num) < 4180) or ((start_strike+_temp_num) >= 4220 and (start_strike+_temp_num) < 4230):
+                _temp_num+=5
+                continue
+
+
+            
         print(df)
     if asset == "CL":
         pass
@@ -70,7 +94,7 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
         _temp_num = 0
         for i in range(number):
             if option_type == "CALL" or option_type == "call":
-                _name = "C OEXD"+str(_month).upper()+str(_year)+str((start_strike+_temp_num))
+                _name = "C OEXD "+str(_month).upper()+" "+str(_year)+" "+str((start_strike+_temp_num))
             if option_type == "PUT" or option_type == "put":
                 _name = "P OEXD "+str(_month).upper()+" "+str(_year)+" "+str((start_strike+_temp_num))
             
@@ -117,5 +141,5 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
         print(df)
 
     
-getSymbols("STOXX","15/09/23",40,42,"call")
+getSymbols("SPX","23/06/22",4145,23,"call")
     
