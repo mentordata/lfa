@@ -6,6 +6,7 @@ Created on Fri Jun  3 12:29:58 2022
 @author: esmx
 """
 import pandas as pd
+import sys
 from os.path import exists
 from datetime import datetime
 
@@ -17,12 +18,19 @@ from threading import Timer
 
 class TestApp(EWrapper, EClient):
 
-     
-    asset="dax";
+    print("ibkr.py asset timeout buy_offset sell_offset")
+
+    if len(sys.argv)!=5:
+        print("Inproper arguments")
+        sys.exit(-1);
+
+
+    asset=sys.argv[1];#"dax";
     
-    timeout=5*60;        # how many seconds trading will work
-    buy_offset=1;      # how many steps price is offset related calculated. >0 helps, lower profit. <0 increase profit
-    sell_offset=-1;     # how many steps price is offset related calculated. <0 helps, lower profit. >0 increase profit
+    timeout=int(sys.argv[2]);        #5*60;        # how many seconds trading will work
+    buy_offset=int(sys.argv[3]);     #;      # how many steps price is offset related calculated. >0 helps, lower profit. <0 increase profit
+    sell_offset=int(sys.argv[4]);    #   -1;     # how many steps price is offset related calculated. <0 helps, lower profit. >0 increase profit
+
     profit_sum=0.0;
     profit_count=0;
     profit_df=pd.DataFrame();
@@ -35,7 +43,7 @@ class TestApp(EWrapper, EClient):
 #    currentSide="BUY";
     lock=False;
     
-    tdf=pd.DataFrame(pd.read_csv('/home/esmx/.config/spyder-py3/'+asset+'_symbols.csv'))
+    tdf=pd.DataFrame(pd.read_csv('./'+asset+'_symbols.csv'))
     tdf.at[:,"current_state"]="OPEN";
     tdf.at[:,"current_side"]="BUY";
     
@@ -330,7 +338,7 @@ def main():
     app = TestApp()
     
     app.nextOrderId = 0
-    app.connect("127.0.0.1", 7497, 1)
+    app.connect("127.0.0.1", 7496, 1)
     app.getPrice()
     print("trading started ...");
     
