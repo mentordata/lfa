@@ -116,7 +116,19 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
                 if ((start_strike+_temp_num) >= 11000 and (start_strike+_temp_num) < 17600) or ((start_strike+_temp_num) >= 18400 and (start_strike+_temp_num) < 18600):
                     _temp_num+=100
                     continue
-                
+            if date_time_obj.strftime('%Y-%m-%d') == "2023-06-16":
+                if (start_strike+_temp_num) == 2500:
+                    _temp_num+=3500
+                    continue
+                if ((start_strike+_temp_num) == 2000 or ((start_strike+_temp_num) >= 18000 and (start_strike+_temp_num) < 22000)):
+                    _temp_num+=500
+                    continue
+                if ((start_strike+_temp_num) >= 6000 and (start_strike+_temp_num) < 12000) or ((start_strike+_temp_num) >= 17000 and (start_strike+_temp_num) < 17400) or ((start_strike+_temp_num) >= 17600 and (start_strike+_temp_num) < 18000):
+                    _temp_num+=200
+                    continue
+                if ((start_strike+_temp_num) >= 12000 and (start_strike+_temp_num) < 17000) or ((start_strike+_temp_num) >= 17400 and (start_strike+_temp_num) < 17600):
+                    _temp_num+=100
+                    continue
                 
             
 
