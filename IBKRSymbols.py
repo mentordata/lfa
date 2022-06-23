@@ -39,6 +39,8 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
         if date_time_obj.strftime('%Y-%m-%d') in _dax5_exp_dates:
                 _dex_desc = "ODX5"
                 print(_dex_desc)
+        else:
+            print("Provided expiration date is wrong.")
         _temp_num = 0
         for i in range(number):
             if option_type == "CALL" or option_type == "call":
@@ -72,7 +74,7 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
                 if (start_strike+_temp_num) >= 11800 and (start_strike+_temp_num) < 15900:
                     _temp_num+=50
                     continue
-            if date_time_obj.strftime('%Y-%m-%d') == "2022-09-16": # to fix
+            if date_time_obj.strftime('%Y-%m-%d') == "2022-09-16":
                 if (start_strike+_temp_num) == 2000:
                     _temp_num+=2500
                     continue
@@ -88,6 +90,33 @@ def getSymbols(asset, expiration, start_strike, number, option_type):
                 if ((start_strike+_temp_num) >= 11900 and (start_strike+_temp_num) < 14500):
                     _temp_num+=50
                     continue
+            if date_time_obj.strftime('%Y-%m-%d') == "2022-12-16":
+                if (start_strike+_temp_num) == 2000:
+                    _temp_num+=2500
+                    continue
+                if ((start_strike+_temp_num) >= 4500 and (start_strike+_temp_num) < 6500) or ((start_strike+_temp_num) >= 19000 and (start_strike+_temp_num) < 22000):
+                    _temp_num+=500
+                    continue
+                if ((start_strike+_temp_num) >= 6500 and (start_strike+_temp_num) < 7000):
+                    _temp_num+=300
+                    continue
+                if ((start_strike+_temp_num) >= 7000 and (start_strike+_temp_num) < 7400) or ((start_strike+_temp_num) >= 7600 and (start_strike+_temp_num) < 8400):
+                    _temp_num+=200
+                    continue
+                if ((start_strike+_temp_num) >= 7400 and (start_strike+_temp_num) < 7600) or ((start_strike+_temp_num) >= 8400 and (start_strike+_temp_num) < 8600):
+                    _temp_num+=100
+                    continue
+            if date_time_obj.strftime('%Y-%m-%d') == "2023-03-17":
+                if ((start_strike+_temp_num) >= 4500 and (start_strike+_temp_num) < 7000) or ((start_strike+_temp_num) >= 19000 and (start_strike+_temp_num) < 22000):
+                    _temp_num+=500
+                    continue
+                if ((start_strike+_temp_num) >= 7000 and (start_strike+_temp_num) < 11000) or ((start_strike+_temp_num) >= 17600 and (start_strike+_temp_num) < 18400) or ((start_strike+_temp_num) >= 18600 and (start_strike+_temp_num) < 19000):
+                    _temp_num+=200
+                    continue
+                if ((start_strike+_temp_num) >= 11000 and (start_strike+_temp_num) < 17600) or ((start_strike+_temp_num) >= 18400 and (start_strike+_temp_num) < 18600):
+                    _temp_num+=100
+                    continue
+                
                 
             
 
