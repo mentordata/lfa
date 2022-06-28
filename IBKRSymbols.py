@@ -1,3 +1,4 @@
+from calendar import setfirstweekday
 from re import L
 import pandas as pd
 from datetime import datetime
@@ -243,29 +244,6 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
     
 
     if asset == "DAX":
-        # _dax4_exp_dates = ["2022-06-24"]
-        # _dax1_exp_dates = ["2022-07-01"]
-        # _dax2_exp_dates = ["2022-07-08"]
-        # _dax5_exp_dates = ["2022-07-29"]
-        # _dax_exp_dates = ["2022-07-15","2022-08-19","2022-09-16","2022-12-16","2023-3-17"]
-        # if date_time_obj.strftime('%Y-%m-%d') in _dax_exp_dates:
-        #         _dex_desc = "ODAX"
-        #         print(_dex_desc)
-        # elif date_time_obj.strftime('%Y-%m-%d') in _dax1_exp_dates:
-        #         _dex_desc = "ODX1"
-        #         print(_dex_desc)
-        # elif date_time_obj.strftime('%Y-%m-%d') in _dax2_exp_dates:
-        #         _dex_desc = "ODX2"
-        #         print(_dex_desc)
-        # elif date_time_obj.strftime('%Y-%m-%d') in _dax4_exp_dates:
-        #         _dex_desc = "ODX4"
-        #         print(_dex_desc)
-        # elif date_time_obj.strftime('%Y-%m-%d') in _dax5_exp_dates:
-        #         _dex_desc = "ODX5"
-        #         print(_dex_desc)
-        # else:
-        #     print("Provided expiration date is wrong.")
-
         _dax_names = [["ODX4","2022-06-24"],
                      ["ODX1","2022-07-01"],
                      ["ODX2","2022-07-08"],
@@ -328,10 +306,34 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
         print(df)
         pass
     if asset == "VIX":
-        pass
+        _names = [["VIXW","2022-06-29"],
+                     ["VIXW","2022-07-06"],
+                     ["VIXW","2022-07-13"],
+                     ["VIX","2022-07-20"],
+                     ["VIXW","2022-07-27"],
+                     ["VIX","2022-08-17"],
+                     ["VIX","2022-09-21"],
+                     ["VIX","2022-11-16"],
+                     ["VIX","2022-12-21"],
+                     ["VIX","2023-01-18"],
+                     ["VIX","2023-02-15"],
+                     ["VIX","2023-03-22"]]
+         
+        _date = date_time_obj.strftime('%Y-%m-%d') 
+        _desc = [t[0] for t in _names if t[1] == _date ]
+        _temp_num = 0
+        for i in range(len(start_strike)):
+            if option_type == "CALL" or option_type == "call":
+                _name = str(_desc[0])+" "+str(_year)+str(_month_num).upper()+str(_day).upper()+"C000"+str((start_strike[_temp_num])*1000)
+            if option_type == "PUT" or option_type == "put":
+                _name = str(_desc[0])+" "+str(_year)+str(_month_num).upper()+str(_day).upper()+"P000"+str((start_strike[_temp_num])*1000)
+            
+            df.loc[i] = [_name,(start_strike[_temp_num]),"CBOE",str("OPT").upper()] 
+            _temp_num+=1
+        print(df)
     if asset == "V2EU":
         _temp_num = 0
-        for i in range(number):
+        for i in range(len(start_strike)):
             if option_type == "CALL" or option_type == "call":
                 _name = "C OVS2"+str(_month).upper()+str(_year)+str((start_strike[_temp_num]))
             if option_type == "PUT" or option_type == "put":
@@ -342,7 +344,7 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
         print(df)
     if asset == "STOXX":
         _temp_num = 0
-        for i in range(number):
+        for i in range(len(start_strike)):
             if option_type == "CALL" or option_type == "call":
                 _name = "C OEXD "+str(_month).upper()+" "+str(_year)+" "+str((start_strike[_temp_num]))
             if option_type == "PUT" or option_type == "put":
@@ -352,5 +354,5 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
             _temp_num+=1 
         print(df)
 #getSymbols("DAX","2022.09.16",11800,50,"call")
-getVecSymbols("DAX","2022.07.08",[20,25,30,35,40,45,50],0,"call")
+getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
     
