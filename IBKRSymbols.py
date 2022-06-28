@@ -269,7 +269,7 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
         print(df)
     if asset == "SPX":
         _temp_num = 0
-        for i in range(number):
+        for i in range(len(start_strike)):
             if option_type == "CALL" or option_type == "call":
                 _name = "SPXW "+str(_year)+str(_month_num).upper()+str(_day).upper()+"C0"+str((start_strike[_temp_num]))+"000"
             if option_type == "PUT" or option_type == "put":
@@ -278,9 +278,9 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
             df.loc[i] = [_name,(start_strike[_temp_num]),"CBOE",str("OPT").upper()]             
             _temp_num+=1
         print(df)
-    if asset == "CL":
-        pass
     if asset == "NG":
+        pass
+    if asset == "CL":
         _ng_names = [["LO1N2","2022-07-01"],
                      ["LO2N2","2022-07-08"],
                      ["LOQ2","2022-07-15"],
