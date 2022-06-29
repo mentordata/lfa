@@ -6,38 +6,43 @@ Created on Fri Jun  3 12:29:58 2022
 @author: Hanna Poplawska for LFA
 """
 import pandas as pd
+import numpy as np
 import sys
 from os.path import exists
 from datetime import datetime
-
+from pricing import getTradePrice
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
 from ibapi.order import Order
 from threading import Timer
+import threading
+import time
 
 class TestApp(EWrapper, EClient):
 
-    print("ibkr.py asset timeout buy_offset sell_offset")
+    print("ibkr.py asset timeout buy_offset sell_offset algo")
 
-    if len(sys.argv)!=5:
+    if len(sys.argv)!=6:
         print("Inproper arguments")
         sys.exit(-1);
 
 
     asset=sys.argv[1];#"dax";
+ #   asset="eu50";
     
     timeout=int(sys.argv[2]);        #5*60;        # how many seconds trading will work
     buy_offset=int(sys.argv[3]);     #;      # how many steps price is offset related calculated. >0 helps, lower profit. <0 increase profit
     sell_offset=int(sys.argv[4]);    #   -1;     # how many steps price is offset related calculated. <0 helps, lower profit. >0 increase profit
-
+    algo=sys.argv[5];
+    
     profit_sum=0.0;
     profit_count=0;
-    profit_df=pd.DataFrame();
     
     startSide="BUY";
     endSide="SELL";
     debug=False;
+    done = False;
     
 #    currentState="OPEN";    #CLOSE
 #    currentSide="BUY";
@@ -49,9 +54,25 @@ class TestApp(EWrapper, EClient):
     
     tdf.at[:,"last_bid"]=0;
     tdf.at[:,"last_ask"]=0;
+    tdf.at[:,"a0"]=0.0;
+    tdf.at[:,"b0"]=0.0;
+    tdf.at[:,"a1"]=0.0;
+    tdf.at[:,"b1"]=0.0;
+    tdf.at[:,"a2"]=0.0;
+    tdf.at[:,"b2"]=0.0;
+    tdf.at[:,"a3"]=0.0;
+    tdf.at[:,"b3"]=0.0;
+    tdf.at[:,"a4"]=0.0;
+    tdf.at[:,"b4"]=0.0;
+    tdf.at[:,"bid_mean"]=0.0;
+    tdf.at[:,"ask_mean"]=0.0;
+    
+    
 #status,price,id_order,bid,ask
     tdf.at[:,"bid"]=0;
     tdf.at[:,"ask"]=0;
+    tdf.at[:,"bids"]=0;
+    tdf.at[:,"asks"]=0;
     tdf.at[:,"id_order_open"]=-1;
     tdf.at[:,"id_order_close"]=-1;
     tdf.at[:,"profit_inc"]=-1;
@@ -59,21 +80,32 @@ class TestApp(EWrapper, EClient):
     tdf.at[:,"price_close"]=-1;
     tdf.at[:,"state"]="FIRST";       #FIRST - wait for open, WAIT - doesnt allow changes, ACTIVE - changes active
     
+    
     tdf.at[:,"status_open"]="none";
     tdf.at[:,"status_close"]="none";
 
     tdf.at[:,"result_sum"]=0.0;
     tdf.at[:,"result_count"]=0;
     
+
+    qp=pd.DataFrame(columns=["timestamp","bid", "ask", "bid2","ask2"])
     
     
 
-    df=tdf.astype({"bid":float, "trade":bool, "ask":float,"id_order_open":int,"id_order_close":int, "price_close":float, "price_open":float,  "status_open":str,"status_close":str, "last_bid":float, "last_ask":float, "step":float})
+    df=tdf.astype({"bids":object, "asks":object, "bid":float, "trade":bool, "ask":float,"id_order_open":int,"id_order_close":int, "price_close":float, "price_open":float,  "status_open":str,"status_close":str, "last_bid":float, "last_ask":float, "step":float})
+
+    for index,x in df.iterrows():
+        df.at[index,"bids"]=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+        df.at[index,"asks"]=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+        
+
     
-    idSymbol=df[df.loc[:,"trade"]==True].index[0];  # which symbol to trade
-    
+#    idSymbol=df[df.loc[:,"trade"]==True].index[0];  # which symbol to trade
+    price_step=df.step[0];
         
     pos=pd.DataFrame({"id","fill_price","status_open"})
+    
+    profit_df=pd.DataFrame(columns={"timestamp","symbol","profit"})
 
     
     def __init__(self):
@@ -171,7 +203,7 @@ class TestApp(EWrapper, EClient):
                     self.df.at[idx,"status_close"]="none";
                     self.df.at[idx,"price_open"]=-1;
                     self.df.at[idx,"price_close"]=-1;
-#                    self.profit_df=round(self.profit_df.append({"result":profit}, ignore_index=True),2);
+                    self.profit_df=self.profit_df.append({"timestamp":datetime.now(),"symbol":self.df.at[idx,"symbol"],"profit":round(profit,2)}, ignore_index=True);
                     self.df.at[idx,"result_sum"]=self.df.at[idx,"result_sum"]+profit;
                     self.df.at[idx,"result_count"]=self.df.at[idx,"result_count"]+1;
                     print(datetime.now(),"RESULT=",round(profit,2),"from trade on", self.df.at[idx,"symbol"]);
@@ -230,7 +262,7 @@ class TestApp(EWrapper, EClient):
             contract.secType = x["type"];
             contract.exchange= x["exchange"];
             self.reqMktData(index, contract, "106", False,False, []);
-            print("requested for price of",contract.localSymbol);
+            print("requested for price of",contract.localSymbol,"reqId:",index);
             
         
  
@@ -243,63 +275,62 @@ class TestApp(EWrapper, EClient):
    
    
 #        df=self.df;
-        price_step=self.df.loc[0].step;
+#        price_step=self.df.loc[0].step;
+        
+        mean_scope=5
         
         #BID
         if tickType==1:
-            self.df.at[reqId,"last_bid"]=self.df.at[reqId,"bid"];
+            self.df.at[reqId,"bids"].insert(0,price);
+            self.df.at[reqId,"bids"].pop();
+            self.df.at[reqId,"bid_mean"]=round((round(np.mean(self.df.iloc[reqId].bids[0:mean_scope])/self.price_step,0))*self.price_step,2);
+#            print("mean:",self.df.at[reqId,"symbol"],"bids:",self.df.iloc[reqId].bids[0:mean_scope])
+            
             self.df.at[reqId,"bid"]=price;
             
         #ASK
         if tickType==2:
-            self.df.at[reqId,"last_ask"]=self.df.at[reqId,"ask"];
+            
+            self.df.at[reqId,"asks"].insert(0,price);
+            self.df.at[reqId,"asks"].pop();
+            self.df.at[reqId,"ask_mean"]=round((round(np.mean(self.df.iloc[reqId].asks[0:mean_scope])/self.price_step,0))*self.price_step,2);
+
+#            print("mean:",self.df.at[reqId,"symbol"],"asks:",self.df.iloc[reqId].asks[0:mean_scope])
             self.df.at[reqId,"ask"]=price;
        
-#            ask=self.df.at[reqId,"ask"];
-#            bid=self.df.at[reqId,"bid"];
-            
-   
-#            if prices_ok == False:
-#        print("bid/ask:",bid_a,' ',ask_a," ",bid_b, " ",ask_b ,"(",price,")");
             
         if (tickType==1 or tickType==2):
 ####################################################################################        
-
-            for idSymbol in self.df[self.df["trade"]].index:
-#                print(":: trade for idSymbol:",idSymbol);
-                price=-1;
-                
-                ask_a=self.df.at[idSymbol-1,"ask"];
-                bid_a=self.df.at[idSymbol-1,"bid"];
-                ask_b=self.df.at[idSymbol+1,"ask"];
-                bid_b=self.df.at[idSymbol+1,"bid"];
-        
-                # check if data are ok
-                prices_ok=(ask_a>0) and (ask_b>0) and (bid_a>0) and (bid_b>0);
-
-                if prices_ok: 
-               
-                    if self.df.at[idSymbol,"current_state"]=="OPEN" and self.df.at[idSymbol,"current_side"]=="BUY":
-                        price=round((round(((bid_a+ask_b)/2)/price_step,0)+self.buy_offset)*price_step,2);
-        
-                        if self.df.at[idSymbol,"price_open"] != price:      #check if price is different than opened
-                            if (self.df.at[idSymbol,"status_open"]=="Submitted") or (self.df.at[idSymbol,"id_order_open"]==-1) :
-                                if self.lock==False:
-                                    # if (submitted) or (not opended yet)
-                                    orderId=self.pushOrder(idSymbol, self.df.at[idSymbol,"id_order_open"], price, self.df.at[idSymbol,"current_side"]);
-                                    self.df.at[idSymbol,"price_open"] = price;
-                                    self.df.at[idSymbol,"id_order_open"]=orderId;
-        
-                    if self.df.at[idSymbol,"current_state"]=="CLOSE" and self.df.at[idSymbol,"current_side"]=="SELL":
-                        price=round((round(((bid_b+ask_a)/2)/price_step,0)+self.sell_offset)*price_step,2);
-        
-                        if self.df.at[idSymbol,"price_close"] != price:      #check if price is different than opened
-                            if (self.df.at[idSymbol,"status_close"]=="Submitted") or (self.df.at[idSymbol,"id_order_close"]==-1) :
-                                # if (submitted) or (not opended yet)
-                                if self.lock==False:
-                                    orderId=self.pushOrder(idSymbol, self.df.at[idSymbol,"id_order_close"], price, self.df.at[idSymbol,"current_side"]);
-                                    self.df.at[idSymbol,"price_close"] = price;
-                                    self.df.at[idSymbol,"id_order_close"]=orderId;
+            pass;
+#            if reqId in (0,7):
+#                self.qp=self.qp.append({"timestamp":datetime.now(),"bid":self.df.at[0,"bid"],"bid2":self.df.at[1,"bid"],"ask":self.df.at[0,"ask"],"ask2":self.df.at[1,"ask"]},ignore_index=True);
+            
+#            for idSymbol in self.df[self.df["trade"]].index:
+##                self.pdf=self.pdf.append({"timestamp":datetime.now(),"bid":self.df.at[0,"bid"]},ignore_index=True);
+##                print(":: trade for idSymbol:",idSymbol);
+#                price=-1;
+#               
+#                if self.df.at[idSymbol,"current_state"]=="OPEN" and self.df.at[idSymbol,"current_side"]=="BUY":
+#                    price=getTradePrice(self,idSymbol,self.algo,"BUY");
+#    
+#                    if self.df.at[idSymbol,"price_open"] != price and price != -1:      #check if price is different than opened
+#                        if (self.df.at[idSymbol,"status_open"]=="Submitted") or (self.df.at[idSymbol,"id_order_open"]==-1) :
+#                            if self.lock==False:
+#                                # if (submitted) or (not opended yet)
+#                                orderId=self.pushOrder(idSymbol, self.df.at[idSymbol,"id_order_open"], price, self.df.at[idSymbol,"current_side"]);
+#                                self.df.at[idSymbol,"price_open"] = price;
+#                                self.df.at[idSymbol,"id_order_open"]=orderId;
+#    
+#                if self.df.at[idSymbol,"current_state"]=="CLOSE" and self.df.at[idSymbol,"current_side"]=="SELL":
+#                    price=getTradePrice(self,idSymbol,self.algo,"SELL");
+#    
+#                    if self.df.at[idSymbol,"price_close"] != price and price != -1:      #check if price is different than opened
+#                        if (self.df.at[idSymbol,"status_close"]=="Submitted") or (self.df.at[idSymbol,"id_order_close"]==-1) :
+#                            # if (submitted) or (not opended yet)
+#                            if self.lock==False:
+#                                orderId=self.pushOrder(idSymbol, self.df.at[idSymbol,"id_order_close"], price, self.df.at[idSymbol,"current_side"]);
+#                                self.df.at[idSymbol,"price_close"] = price;
+#                                self.df.at[idSymbol,"id_order_close"]=orderId;
 
 ####################################################################################                    
             
@@ -323,15 +354,41 @@ class TestApp(EWrapper, EClient):
         
         print("===================");
         print(datetime.now());
-        print("timeout=",self.timeout,"buy_offset=",self.buy_offset,"sell_offset=",self.sell_offset);        
+        print("algo=",self.algo,"timeout=",self.timeout,"buy_offset=",self.buy_offset,"sell_offset=",self.sell_offset);        
         print(self.df);
-        print("sum=",sum(self.df.result_sum));
+        print("==========");
+        print(self.profit_df);
+        print("sharpee=",round(np.mean(self.profit_df.profit)/np.std(self.profit_df.profit),2),"mean=",np.mean(self.profit_df.profit), "count=",len(self.profit_df.profit));
+        
+        
+#        print(self.qp);
+        self.qp.to_csv("qp."+self.asset+".csv");
+        
 
         
     def check_if_stop(self):
         if exists("py_stop"):
             self.done = True;
             self.disconnect();
+            
+    def get_ticks(self):
+
+        print("ticks collection started");
+        while self.done==False :
+            time.sleep(1);
+            print("ticket at ", datetime.now());
+            self.qp=self.qp.append({"timestamp":datetime.now(), 
+            "bid":self.df.at[0,"bid"], 
+            "bid2":self.df.at[1,"bid"], 
+            "bid3":self.df.at[2,"bid"], 
+            "bid4":self.df.at[3,"bid"], 
+            "ask":self.df.at[0,"ask"], 
+            "ask2":self.df.at[1,"ask"], 
+            "ask3":self.df.at[2,"ask"], 
+            "ask4":self.df.at[3,"ask"]},
+            ignore_index=True);
+        print("ticks collection stopped");
+        
 
 def main():
     
@@ -342,9 +399,17 @@ def main():
     app.getPrice()
     print("trading started ...");
     
+    t1 = threading.Thread(target=app.get_ticks);
+    t1.start();
+    
     
     Timer(app.timeout, app.stop).start()
     app.run()
+    
+    
+    
+
+        
 
 if __name__ == "__main__":
     main()

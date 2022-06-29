@@ -1,0 +1,5 @@
+id,symbol,exchange,type,step,side,trade
+1,C ODAX 20221216 13000 M,DTB,OPT,1,buy,False
+2,P ODAX 20221216 13000 M,DTB,OPT,1,buy,False
+3,C OESX 20221216 3500 M,DTB,OPT,1,buy,False
+4,P OESX 20221216 3500 M,DTB,OPT,1,buy,False
