@@ -335,9 +335,9 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
         _temp_num = 0
         for i in range(len(start_strike)):
             if option_type == "CALL" or option_type == "call":
-                _name = "C OVS2 20"+str(_year).upper()+str(_month_num).upper()+str(_day)+" "+str((start_strike[_temp_num]))
+                _name = "C OVS2 20"+str(_year).upper()+str(_month_num).upper()+str(_day)+" "+str((start_strike[_temp_num]))+" M"
             if option_type == "PUT" or option_type == "put":
-                _name = "P OVS2 20"+str(_year).upper()+str(_month_num).upper()+" "+str(_day)+" "+str((start_strike[_temp_num]))
+                _name = "P OVS2 20"+str(_year).upper()+str(_month_num).upper()+" "+str(_day)+" "+str((start_strike[_temp_num]))+" M"
             
             df.loc[i] = [_name,(start_strike[_temp_num]),"DTB",str("OPT").upper()] 
             _temp_num+=1
@@ -354,15 +354,15 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
             _temp_num+=1 
         print(df)
 #getSymbols("DAX","2022.09.16",11800,50,"call")
-getVecSymbols("DAX","2022.07.01",[20,25,30,35,40,45,50],0,"call")
-getVecSymbols("SPX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
-getVecSymbols("CL","2022.07.01",[20,25,30,35,40,45,50],0,"call")
-getVecSymbols("V2EU","2022.07.06",[20,25,30,35,40,45,50],0,"call")
-getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
-getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
-getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
-getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
-getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
+getVecSymbols("V2EU","2022.07.01",[20,25,30,35,40,45,50],0,"call")
+# getVecSymbols("SPX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
+# getVecSymbols("CL","2022.07.01",[20,25,30,35,40,45,50],0,"call")
+# getVecSymbols("V2EU","2022.07.06",[20,25,30,35,40,45,50],0,"call")
+# getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
+# getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
+# getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
+# getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
+# getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
 
 
     
