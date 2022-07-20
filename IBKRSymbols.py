@@ -237,6 +237,7 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
     date_time_obj = datetime.strptime(expiration, '%Y.%m.%d')
     
     _year = date_time_obj.strftime('%y')
+    _year_full = date_time_obj.strftime('%Y')
     _month = date_time_obj.strftime('%b')
     _month_num = date_time_obj.strftime('%m')
     _day = date_time_obj.strftime('%d')
@@ -244,7 +245,7 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
     
 
     if asset == "DAX":
-        _dax_names = [["ODX4","2022-06-24"],
+        _dax_names = [["ODX4","2022-07-22"],
                      ["ODX1","2022-07-01"],
                      ["ODX2","2022-07-08"],
                      ["ODX5","2022-07-29"],
@@ -260,13 +261,14 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
         _temp_num = 0
         for i in range(len(start_strike)):
             if option_type == "CALL" or option_type == "call":
-                _name = "C "+str(_dax_desc[0]).upper()+" "+str(_month).upper()+" "+str(_year)+" "+str((start_strike[_temp_num]))
+                _name = "C "+str(_dax_desc[0]).upper()+" "+str(_year_full)+str(_month_num).upper()+str(_day)+" "+str((start_strike[_temp_num]))+" M"
             if option_type == "PUT" or option_type == "put":
-                _name = "P "+str(_dax_desc[0]).upper()+" "+str(_month).upper()+" "+str(_year)+" "+str((start_strike[_temp_num]))
+                _name = "P "+str(_dax_desc[0]).upper()+" "+str(_year_full)+str(_month_num).upper()+str(_day)+" "+str((start_strike[_temp_num]))+" M"
             
             df.loc[i] = [_name,(start_strike[_temp_num]),"DTB",str("OPT").upper()]
             _temp_num+=1
         print(df)
+        df.to_csv("temp_"+_day+".csv",index=False)
     if asset == "SPX":
         _temp_num = 0
         for i in range(len(start_strike)):
@@ -354,7 +356,7 @@ def getVecSymbols(asset, expiration, start_strike, number, option_type):
             _temp_num+=1 
         print(df)
 #getSymbols("DAX","2022.09.16",11800,50,"call")
-getVecSymbols("V2EU","2022.07.01",[20,25,30,35,40,45,50],0,"call")
+#getVecSymbols("V2EU","2022.07.01",[20,25,30,35,40,45,50],0,"call")
 # getVecSymbols("SPX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
 # getVecSymbols("CL","2022.07.01",[20,25,30,35,40,45,50],0,"call")
 # getVecSymbols("V2EU","2022.07.06",[20,25,30,35,40,45,50],0,"call")
@@ -365,4 +367,6 @@ getVecSymbols("V2EU","2022.07.01",[20,25,30,35,40,45,50],0,"call")
 # getVecSymbols("VIX","2022.07.06",[20,25,30,35,40,45,50],0,"call")
 
 
-    
+getVecSymbols("DAX","2022.07.08",[12700,12750,12800],0,"call")
+getVecSymbols("DAX","2022.07.15",[12700,12750,12800],0,"call")
+getVecSymbols("DAX","2022.07.22",[12700,12750,12800],0,"call")
