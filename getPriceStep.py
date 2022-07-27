@@ -11,7 +11,7 @@ cnx.commit()
 # closing database
 cnx.close()
 
-def get_price_step(tab,price):
+def getPriceStep(tab,price):
 
     if isinstance(tab,str):
         tab = ast.literal_eval(tab)
@@ -41,7 +41,7 @@ def get_price_step(tab,price):
 # example: 
 #price_list = df["price_inc"][0]
 #price = 10
-#print("get_price_step: ",get_price_step(price_list,price))
+#print("getPriceStep: ",getPriceStep(price_list,price))
 
 
 
