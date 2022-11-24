@@ -65,7 +65,7 @@ if(file_version == 1):
 
             if(line_parts[-4] != '1'):
                 resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-                print(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",","."))
+              
 else:
     for line in lines:
         line.strip()
@@ -93,7 +93,7 @@ else:
                         temp_list[2] = line_parts
                     x = [item for sublist in temp_list for item in sublist]
                     x[0] = x[0].rstrip(',')
-                    print(x)
+                    #print(x)
                     if(x[0][2]=='.'):
                         _date = datetime.datetime.strptime(str(x[0]), '%d.%m.%Y').date()
                     else:
