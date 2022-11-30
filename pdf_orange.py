@@ -64,8 +64,10 @@ if(file_version == 1):
                 _network = line_parts[2]+" "+line_parts[3]
 
             if(line_parts[-4] != '1'):
-                resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-              
+                resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
+                #print(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",","."))
+            else:
+                resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
 else:
     for line in lines:
         line.strip()
@@ -101,7 +103,9 @@ else:
                     _hour = datetime.datetime.strptime(str(x[2]), '%H:%M').time()
                     _network = x[3]
                     if(x[5] != '1'):
-                        resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+","+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
+                        resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+",call,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
+                    else:
+                        resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+",sms,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
 
 
 file.close()
