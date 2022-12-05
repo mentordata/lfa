@@ -2,7 +2,7 @@ from PyPDF2 import PdfReader
 import datetime
 import sys
 import os
-
+import re
 
 # few helpful functions
 
@@ -16,7 +16,7 @@ def merge_net(lst):
 # loop through given directory
 
 resultFile = open("resultFile.txt", 'w')
-resultFile.write("data,godzina,siec,typ,numer,liczba,dozaplaty\n")
+resultFile.write("data,godzina,numer,siec,typ,numer_zewnetrzny,liczba,dozaplaty\n")
 
 for filename in os.listdir(sys.argv[1]):
     f = os.path.join(sys.argv[1], filename)
@@ -42,7 +42,7 @@ for filename in os.listdir(sys.argv[1]):
     lines = file.readlines()
 
     file_version = 0
-
+    current_client_number = 0
 
     # checking format of file based on date format
 
@@ -65,6 +65,9 @@ for filename in os.listdir(sys.argv[1]):
             line.strip()
             line_parts = line.split()
 
+            if (len(line_parts)>=9 and re.search('brutto za telefon',line.strip())):
+                number = re.search(r'za telefon nr (.*)',line.strip()).group(1)
+                current_client_number = int(number[0:9])
             if(len(line_parts) == 2 and '.' in line_parts[0] and line_parts[0][0].isdigit()):
                 _date = datetime.datetime.strptime(str(line_parts[0][:-1]), '%d.%m.%Y').date()
             if(len(line_parts) == 8 or len(line_parts) == 9):
@@ -76,15 +79,18 @@ for filename in os.listdir(sys.argv[1]):
                     _network = line_parts[2]+" "+line_parts[3]
 
                 if(line_parts[-4] != '1'):
-                    resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
+                    resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
                     #print(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",","."))
                 else:
-                    resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
+                    resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
     if(file_version == 2):
         for line in lines:
             line.strip()
             line_parts = line.split()
 
+            if (len(line_parts)>=9 and re.search('brutto za telefon',line.strip())):
+                number = re.search(r'za telefon nr (.*)',line.strip()).group(1)
+                current_client_number = int(number[0:9])
             if(len(line_parts) == 1):
                 if(':' in line_parts[0] and hasNumbers(line_parts[0])):
                     if len(temp_list) == 1:
@@ -115,9 +121,9 @@ for filename in os.listdir(sys.argv[1]):
                         _hour = datetime.datetime.strptime(str(x[2]), '%H:%M').time()
                         _network = x[3]
                         if(x[5] != '1'):
-                            resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+",call,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
+                            resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
                         else:
-                            resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+_network+",sms,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
+                            resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
 
     file.close()
 resultFile.close()
