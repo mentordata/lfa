@@ -23,15 +23,16 @@ for filename in os.listdir(sys.argv[1]):
     if filename.endswith('.pdf'):
         pass
     else:
-        print("Found unsupported file (not .pdf): ",f)
+        print("[ERROR] Found unsupported file (not .pdf): ",f)
         continue
 
     # text preparation - using temp as medium to paste data from pdf and read for prorgam usage
-
+    
+    
     text = ""
     tempfile = open("temp.txt", "w")
 
-    reader = PdfReader(f)
+    reader = PdfReader(f,strict=False)
     for page in reader.pages:
         text += page.extract_text() + "\n"
     tempfile.write(text)
@@ -43,6 +44,13 @@ for filename in os.listdir(sys.argv[1]):
 
     file_version = 0
     current_client_number = 0
+
+    # variables for diagnostics
+    row_counter = 0
+    ignored_rows = 0
+    # diagnostics output
+    
+    print("[INFO] Started processing file: ",f)
 
     # checking format of file based on date format
 
@@ -64,12 +72,11 @@ for filename in os.listdir(sys.argv[1]):
         for line in lines:
             line.strip()
             line_parts = line.split()
-            
+
             if (len(line_parts)>=9 and re.search('brutto za telefon',line.strip())):
                 number = re.search(r'za telefon nr (.*)',line.strip()).group(1)
                 current_client_number = int(number[0:9])
             if(len(line_parts) == 2 and '.' in line_parts[0] and line_parts[0][0].isdigit() and len(line_parts[0])== 11):
-                
                 _date = datetime.datetime.strptime(str(line_parts[0][:-1]), '%d.%m.%Y').date()
             if(len(line_parts) == 6):
                 if(":" in line_parts[0]):
@@ -77,13 +84,12 @@ for filename in os.listdir(sys.argv[1]):
                 else:
                     continue
                 _network = line_parts[0][6:]
-                
-
                 if(line_parts[-4] != '1'):
                     resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-                    #print(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",","."))
+                    row_counter+=1
                 else:
                     resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
+                    row_counter+=1
             if(len(line_parts) == 7):
                 if(":" in line_parts[0]):
                     _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
@@ -103,9 +109,10 @@ for filename in os.listdir(sys.argv[1]):
                 
                 if(line_parts[-4] != '1'):
                     resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-                    #print(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",","."))
+                    row_counter+=1
                 else:
                     resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
+                    row_counter+=1
             if(len(line_parts) == 8 or len(line_parts) == 9):
                 if("," not in line_parts[-1] or len(line_parts[-5]) != 9):
                     continue
@@ -125,9 +132,10 @@ for filename in os.listdir(sys.argv[1]):
                 
                 if(line_parts[-4] != '1'):
                     resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-                    #print(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",","."))
+                    row_counter+=1
                 else:
                     resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
+                    row_counter+=1
     if(file_version == 2):
         for line in lines:
             line.strip()
@@ -167,8 +175,13 @@ for filename in os.listdir(sys.argv[1]):
                         _network = x[3]
                         if(x[5] != '1'):
                             resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
+                            row_counter+=1
                         else:
                             resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
+                            row_counter+=1
 
+    print(">>> Processed "+str(row_counter)+" rows.")
+    
     file.close()
+print("Program finished.")
 resultFile.close()
