@@ -16,7 +16,7 @@ def merge_net(lst):
 # loop through given directory
 
 resultFile = open("resultFile.txt", 'w')
-resultFile.write("data,godzina,numer,siec,typ,numer_zewnetrzny,liczba,dozaplaty\n")
+resultFile.write("data,godzina,numer,siec,typ,numer_przychodzacy,liczba,dozaplaty\n")
 
 for filename in os.listdir(sys.argv[1]):
     f = os.path.join(sys.argv[1], filename)
@@ -64,20 +64,65 @@ for filename in os.listdir(sys.argv[1]):
         for line in lines:
             line.strip()
             line_parts = line.split()
-
+            
             if (len(line_parts)>=9 and re.search('brutto za telefon',line.strip())):
                 number = re.search(r'za telefon nr (.*)',line.strip()).group(1)
                 current_client_number = int(number[0:9])
-            if(len(line_parts) == 2 and '.' in line_parts[0] and line_parts[0][0].isdigit()):
+            if(len(line_parts) == 2 and '.' in line_parts[0] and line_parts[0][0].isdigit() and len(line_parts[0])== 11):
+                
                 _date = datetime.datetime.strptime(str(line_parts[0][:-1]), '%d.%m.%Y').date()
+            if(len(line_parts) == 6):
+                if(":" in line_parts[0]):
+                    _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
+                else:
+                    continue
+                _network = line_parts[0][6:]
+                
+
+                if(line_parts[-4] != '1'):
+                    resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
+                    #print(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",","."))
+                else:
+                    resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
+            if(len(line_parts) == 7):
+                if(":" in line_parts[0]):
+                    _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
+                else:
+                    continue
+                if(len(line_parts[0]) == 7):    #Polska
+                    _network = line_parts[1]
+                else:
+                    if(line_parts[1] == "mobile"):
+                        _network = "nju mobile"
+                    if(line_parts[1] == "P4"):
+                        _network = "sieć P4"
+                    if(line_parts[1] == "Polkomtel"):
+                        _network = "sieć Polkomtel"
+                    if(line_parts[1] == "T-mobile"):
+                        _network = "sieć T-mobile"
+                
+                if(line_parts[-4] != '1'):
+                    resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
+                    #print(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",","."))
+                else:
+                    resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
             if(len(line_parts) == 8 or len(line_parts) == 9):
-                _hour = datetime.datetime.strptime(str(line_parts[0]), '%H:%M').time()
+                if("," not in line_parts[-1] or len(line_parts[-5]) != 9):
+                    continue
+                _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
 
                 if(len(line_parts[3])==9):
-                    _network = line_parts[2]
+                    if(line_parts[2] == "mobile"):
+                        _network = "nju mobile"
+                    if(line_parts[2] == "P4"):
+                        _network = "sieć P4"
+                    if(line_parts[2] == "Polkomtel"):
+                        _network = "sieć Polkomtel"
+                    if(line_parts[2] == "T-mobile"):
+                        _network = "sieć T-mobile"
                 else:
                     _network = line_parts[2]+" "+line_parts[3]
-
+                
                 if(line_parts[-4] != '1'):
                     resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
                     #print(_date.isoformat()+","+_hour.isoformat()+","+_network+","+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",","."))
