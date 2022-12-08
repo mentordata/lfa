@@ -49,7 +49,7 @@ for filename in os.listdir(sys.argv[1]):
     row_counter = 0
     ignored_rows = 0
     # diagnostics output
-    
+
     print("[INFO] Started processing file: ",f)
 
     # checking format of file based on date format
@@ -80,7 +80,10 @@ for filename in os.listdir(sys.argv[1]):
                     _date = datetime.datetime.strptime(str(line_parts[0][:-1]), '%d.%m.%Y').date()
                 if(len(line_parts) == 6):
                     if(":" in line_parts[0]):
-                        _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
+                        if(line_parts[0][3] == ":"):
+                            _hour = datetime.datetime.strptime(str(line_parts[0][1:6]), '%H:%M').time()
+                        else:    
+                            _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
                     else:
                         continue
                     _network = line_parts[0][6:]
@@ -116,7 +119,13 @@ for filename in os.listdir(sys.argv[1]):
                 if(len(line_parts) == 8 or len(line_parts) == 9):
                     if("," not in line_parts[-1] or len(line_parts[-5]) != 9):
                         continue
-                    _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
+                    if(":" in line_parts[0]):
+                        if(line_parts[0][3] == ":"):
+                            _hour = datetime.datetime.strptime(str(line_parts[0][1:6]), '%H:%M').time()
+                        else:    
+                            _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
+                    else:
+                        continue
 
                     if(len(line_parts[3])==9):
                         if(line_parts[2] == "mobile"):
@@ -180,7 +189,7 @@ for filename in os.listdir(sys.argv[1]):
                                 resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
                                 row_counter+=1
     except Exception as e:
-        print("[ERROR] ",sys.exc_info()[0]," occured in file: ",f)
+        print("[ERROR] ",sys.exc_info()[1]," |  occured in file: ",f)
         
         print("Proceeding to next file...\n")
     print(">>> Processed "+str(row_counter)+" rows.\n")
