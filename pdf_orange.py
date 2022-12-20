@@ -4,6 +4,11 @@ import sys
 import os
 import re
 
+import logging
+logger = logging.getLogger("PyPDF2")
+logger.setLevel(logging.ERROR)
+
+
 # few helpful functions
 
 def hasNumbers(inputString):
@@ -27,8 +32,7 @@ for filename in os.listdir(sys.argv[1]):
         continue
 
     # text preparation - using temp as medium to paste data from pdf and read for prorgam usage
-    
-    
+
     text = ""
     tempfile = open("temp.txt", "w")
 
@@ -43,7 +47,11 @@ for filename in os.listdir(sys.argv[1]):
     lines = file.readlines()
 
     file_version = 0
+    client_number = []
+    num_changed = 0
     current_client_number = 0
+
+    prev_date = datetime.date(2000,1,1)
 
     # variables for diagnostics
     row_counter = 0
@@ -64,7 +72,13 @@ for filename in os.listdir(sys.argv[1]):
                     file_version = 1
                 else:
                     file_version = 2
-
+    for line in lines:
+                line.strip()
+                line_parts = line.split()
+                if (len(line_parts)>=9 and re.search('brutto za telefon',line.strip())):
+                    number = re.search(r'za telefon nr (.*)',line.strip()).group(1)
+                    client_number.append(int(number[0:9]))
+    #print("CLIENT NUMBERS: ",client_number)
     # main part of program
     try:
         temp_list = []
@@ -72,21 +86,31 @@ for filename in os.listdir(sys.argv[1]):
             for line in lines:
                 line.strip()
                 line_parts = line.split()
-
-                if (len(line_parts)>=9 and re.search('brutto za telefon',line.strip())):
-                    number = re.search(r'za telefon nr (.*)',line.strip()).group(1)
-                    current_client_number = int(number[0:9])
                 if(len(line_parts) == 2 and '.' in line_parts[0] and line_parts[0][0].isdigit() and len(line_parts[0])== 11):
                     _date = datetime.datetime.strptime(str(line_parts[0][:-1]), '%d.%m.%Y').date()
+                    #print("[",prev_date," | ",_date,"]")
+                    if(_date >= prev_date):
+                        if num_changed == 0:
+                            prev_date = _date
+                            current_client_number = client_number[0]
+                        else:
+                            prev_date = _date
+                            current_client_number = client_number[1]
+                    else:
+                        current_client_number = client_number[1]
+                        prev_date = _date
+                        num_changed = 1
                 if(len(line_parts) == 6):
                     if(":" in line_parts[0]):
                         if(line_parts[0][3] == ":"):
                             _hour = datetime.datetime.strptime(str(line_parts[0][1:6]), '%H:%M').time()
-                        else:    
+                        else:
                             _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
                     else:
                         continue
                     _network = line_parts[0][6:]
+                    if('Polska' in _network): _network = "Polska"
+                    if('Orange' in _network): _network = "Orange"
                     if(line_parts[-4] != '1'):
                         resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
                         row_counter+=1
@@ -95,21 +119,20 @@ for filename in os.listdir(sys.argv[1]):
                         row_counter+=1
                 if(len(line_parts) == 7):
                     if(":" in line_parts[0]):
-                        _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
+                        if(line_parts[0][3] == ":"):
+                            _hour = datetime.datetime.strptime(str(line_parts[0][1:6]), '%H:%M').time()
+                        else:    
+                            _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
                     else:
                         continue
                     if(len(line_parts[0]) == 7):    #Polska
                         _network = line_parts[1]
                     else:
-                        if(line_parts[1] == "mobile"):
-                            _network = "nju mobile"
-                        if(line_parts[1] == "P4"):
-                            _network = "sieć P4"
-                        if(line_parts[1] == "Polkomtel"):
-                            _network = "sieć Polkomtel"
-                        if(line_parts[1] == "T-mobile"):
-                            _network = "sieć T-mobile"
-                    
+                        if(line_parts[1] == "mobile"): _network = "nju mobile"
+                        if(line_parts[1] == "P4"): _network = "sieć P4"
+                        if(line_parts[1] == "Polkomtel"): _network = "sieć Polkomtel"
+                        if(line_parts[1] == "T-mobile"): _network = "sieć T-mobile"
+
                     if(line_parts[-4] != '1'):
                         resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
                         row_counter+=1
@@ -122,7 +145,7 @@ for filename in os.listdir(sys.argv[1]):
                     if(":" in line_parts[0]):
                         if(line_parts[0][3] == ":"):
                             _hour = datetime.datetime.strptime(str(line_parts[0][1:6]), '%H:%M').time()
-                        else:    
+                        else:
                             _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
                     else:
                         continue
@@ -138,7 +161,7 @@ for filename in os.listdir(sys.argv[1]):
                             _network = "sieć T-mobile"
                     else:
                         _network = line_parts[2]+" "+line_parts[3]
-                    
+
                     if(line_parts[-4] != '1'):
                         resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
                         row_counter+=1
@@ -150,9 +173,6 @@ for filename in os.listdir(sys.argv[1]):
                 line.strip()
                 line_parts = line.split()
 
-                if (len(line_parts)>=9 and re.search('brutto za telefon',line.strip())):
-                    number = re.search(r'za telefon nr (.*)',line.strip()).group(1)
-                    current_client_number = int(number[0:9])
                 if(len(line_parts) == 1):
                     if(':' in line_parts[0] and hasNumbers(line_parts[0])):
                         if len(temp_list) == 1:
@@ -180,6 +200,18 @@ for filename in os.listdir(sys.argv[1]):
                                 _date = datetime.datetime.strptime(str(x[0]), '%d.%m.%Y').date()
                             else:
                                 _date = datetime.datetime.strptime(str(x[0]), '%Y.%m.%d').date()
+                            #print("[",prev_date," | ",_date,"]")
+                            if(_date >= prev_date):
+                                if num_changed == 0:
+                                    prev_date = _date
+                                    current_client_number = client_number[0]
+                                else:
+                                    prev_date = _date
+                                    current_client_number = client_number[1]
+                            else:
+                                current_client_number = client_number[1]
+                                prev_date = _date
+                                num_changed = 1
                             _hour = datetime.datetime.strptime(str(x[2]), '%H:%M').time()
                             _network = x[3]
                             if(x[5] != '1'):
@@ -189,11 +221,11 @@ for filename in os.listdir(sys.argv[1]):
                                 resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
                                 row_counter+=1
     except Exception as e:
-        print("[ERROR] ",sys.exc_info()[1]," |  occured in file: ",f)
-        
+        print("[ERROR] ",sys.exc_info()," |  occured in file: ",f)
+
         print("Proceeding to next file...\n")
     print(">>> Processed "+str(row_counter)+" rows.\n")
-    
+
     file.close()
 print("Program finished.")
 resultFile.close()
