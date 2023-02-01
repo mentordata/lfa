@@ -81,7 +81,7 @@ for filename in os.listdir('pdf/'):
                 #print(row_parts)
                 days = ["Poniedziałek","Wtorek","Środa","Czwartek","Piątek","Sobota","Niedziela"]
 
-                if(len(row_parts) == 4):
+                if(len(row_parts) == 2 or len(row_parts) == 4):
                     if row_parts[1] in days:
                         row_parts[0] = row_parts[0].replace(",","")
                         good_row.append(row_parts)
@@ -89,6 +89,9 @@ for filename in os.listdir('pdf/'):
                 #    row_parts[0] = row_parts[0].replace(",","")
                     #print(row_parts)
                 #    good_row.append(row_parts)
+                if(len(row_parts) == 7 or len(row_parts) == 8):
+                    if (row_parts[2].isnumeric() or row_parts[3].isnumeric()) and row_parts[0][2]==':':
+                        good_row.append(row_parts)
                 if(len(row_parts) >= 9 and ((row_parts[2].isdigit() and len(row_parts[2]) == 9 ) or (row_parts[3].isdigit() and len(row_parts[3]) == 9 ) or (row_parts[4].isdigit()  and len(row_parts[4]) == 9) or (row_parts[5].isdigit() and len(row_parts[5]) == 9)) and row_parts[3] != 'internet'):
                     row_parts[0] = row_parts[0].replace(",","")
                     #print(row_parts)
@@ -120,6 +123,10 @@ for filename in os.listdir('pdf/'):
 
 
                 # creating proper data lists
+                
+                if(len(row) == 2 or len(row) == 7 or len(row) == 8):
+                    first_list.append(row)
+                
                 if(len(row) == 14 or len(row) == 15 or len(row) == 16):
                     # [DATA][DATA]
                     if (len(row[2]) == 9 or len(row[3]) == 9 ) and (len(row[10]) == 9 or len(row[11]) == 9 ):
@@ -172,6 +179,10 @@ for filename in os.listdir('pdf/'):
                 for row in fix_list:
                 #print(row)
                 # creating proper data lists
+                
+                    if(len(row) == 2 or len(row) == 7 or len(row) == 8):
+                        first_list.append(row)
+                
                     if(len(row) == 15 or len(row) == 16):
                         # [DATA][DATA]
                         if (len(row[2]) == 9 or len(row[3]) == 9 ) and (len(row[10]) == 9 or len(row[11]) == 9 ):
