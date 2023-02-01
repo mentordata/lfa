@@ -58,7 +58,7 @@ for filename in os.listdir(sys.argv[1]):
             first_list = []
             sec_list = []
 
-            items_to_remove = ['ˬʔ','ˬ','˛','˛ƺ']
+            items_to_remove = ['ˬʔ','ˬ','˛','˛ƺ','˛ʔ']
 
             counter_r = 0
             for line in lines:
