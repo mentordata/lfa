@@ -13,8 +13,8 @@ resultFile.write("data,godzina,numer,siec,typ,numer_przychodzacy,liczba,dozaplat
 
 
 
-for filename in os.listdir('pdf/'):
-    f = os.path.join('pdf/', filename)
+for filename in os.listdir(sys.argv[1]):
+    f = os.path.join(sys.argv[1], filename)
     if filename.endswith('.pdf'):
         pass
     else:
