@@ -1,231 +1,274 @@
-from PyPDF2 import PdfReader
+import pdfplumber
+import pandas as pd
+from pprint import pprint
 import datetime
+import re
 import sys
 import os
-import re
+import traceback
 
-import logging
-logger = logging.getLogger("PyPDF2")
-logger.setLevel(logging.ERROR)
-
-
-# few helpful functions
-
-def hasNumbers(inputString):
-    return any(char.isnumeric() for char in inputString)
-
-def merge_net(lst):
-    if(lst[2].isdigit() and len(lst[2]) == 9):
-        lst[0:2] = [' '.join(lst[0:2])]
-
-# loop through given directory
-
-resultFile = open("resultFile.txt", 'w')
+# result file:
+resultFile = open("resultFile.txt", 'w',encoding='utf-8')
 resultFile.write("data,godzina,numer,siec,typ,numer_przychodzacy,liczba,dozaplaty\n")
 
-for filename in os.listdir(sys.argv[1]):
-    f = os.path.join(sys.argv[1], filename)
+
+
+for filename in os.listdir('pdf/'):
+    f = os.path.join('pdf/', filename)
     if filename.endswith('.pdf'):
         pass
     else:
         print("[ERROR] Found unsupported file (not .pdf): ",f)
         continue
 
-    # text preparation - using temp as medium to paste data from pdf and read for prorgam usage
-
     text = ""
-    tempfile = open("temp.txt", "w")
 
-    reader = PdfReader(f,strict=False)
-    for page in reader.pages:
-        text += page.extract_text() + "\n"
-    tempfile.write(text)
+    # GLOBAL VARIABLES
+    current_number = 0
 
-    tempfile.close()
+    
 
-    file = open("temp.txt", "r")
-    lines = file.readlines()
+    #TEMP VAR
+    counter = 1
+    temp_file_list = []
 
-    file_version = 0
+    # READING DATA FROM PDF AND PUTTING PER PAGE INTO TEMP_PAGE_TEXT
+    with pdfplumber.open(f) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            filename = "temp_file_"+str(counter)+".txt"
+            #print(filename)
+            temp_file_list.append(filename)
+            #print(temp_file_list)
+            with open(filename,"w",encoding='utf-8') as temp:
+                temp.write(text)
+            temp.close()
+            counter+=1
+
+    final_list = []
     client_number = []
-    num_changed = 0
-    current_client_number = 0
-
-    prev_date = datetime.date(2000,1,1)
-
-    # variables for diagnostics
-    row_counter = 0
-    ignored_rows = 0
-    # diagnostics output
-
     print("[INFO] Started processing file: ",f)
+    try:
+        for temp_n in temp_file_list:
+            temp = open(temp_n,"r",encoding='utf-8')
+            lines = temp.readlines()
 
-    # checking format of file based on date format
+            good_row = []
 
-    with open("temp.txt", 'r') as fp:
-        lines = fp.readlines()
-        for row in lines:
-            row.strip()
-            row_parts = row.split()
-            if(len(row_parts)==8 or len(row_parts)==9):
-                if(row_parts[0][2] == ':'):
-                    file_version = 1
-                else:
-                    file_version = 2
-    for line in lines:
+            first_list = []
+            sec_list = []
+
+            items_to_remove = ['ˬʔ','ˬ','˛','˛ƺ']
+
+            counter_r = 0
+            for line in lines:
                 line.strip()
                 line_parts = line.split()
                 if (len(line_parts)>=9 and re.search('brutto za telefon',line.strip())):
                     number = re.search(r'za telefon nr (.*)',line.strip()).group(1)
                     client_number.append(int(number[0:9]))
-    #print("CLIENT NUMBERS: ",client_number)
-    # main part of program
-    try:
-        temp_list = []
-        if(file_version == 1):
-            for line in lines:
-                line.strip()
-                line_parts = line.split()
-                if(len(line_parts) == 2 and '.' in line_parts[0] and line_parts[0][0].isdigit() and len(line_parts[0])== 11):
-                    _date = datetime.datetime.strptime(str(line_parts[0][:-1]), '%d.%m.%Y').date()
-                    #print("[",prev_date," | ",_date,"]")
-                    if(_date >= prev_date):
-                        if num_changed == 0:
-                            prev_date = _date
-                            current_client_number = client_number[0]
-                        else:
-                            prev_date = _date
-                            current_client_number = client_number[1]
+            #print(client_number)
+            for row in lines:
+                row.strip()
+                row_parts = row.split()
+
+                #print(row_parts)
+                # deleting unnecessary ASCII characters
+                for i in range(2):
+                    for item in items_to_remove:
+                        if item in row_parts:
+                            row_parts.remove(item)
+                #print(row_parts)
+                days = ["Poniedziałek","Wtorek","Środa","Czwartek","Piątek","Sobota","Niedziela"]
+
+                if(len(row_parts) == 4):
+                    if row_parts[1] in days:
+                        row_parts[0] = row_parts[0].replace(",","")
+                        good_row.append(row_parts)
+                #if(len(row_parts) == 4 and row_parts[0][2].isnumeric() and row_parts[0][4] == '.') or (len(row_parts) == 4 and row_parts[0][1].isnumeric() and row_parts[0][3] == '.'):
+                #    row_parts[0] = row_parts[0].replace(",","")
+                    #print(row_parts)
+                #    good_row.append(row_parts)
+                if(len(row_parts) >= 9 and ((row_parts[2].isdigit() and len(row_parts[2]) == 9 ) or (row_parts[3].isdigit() and len(row_parts[3]) == 9 ) or (row_parts[4].isdigit()  and len(row_parts[4]) == 9) or (row_parts[5].isdigit() and len(row_parts[5]) == 9)) and row_parts[3] != 'internet'):
+                    row_parts[0] = row_parts[0].replace(",","")
+                    #print(row_parts)
+                    good_row.append(row_parts)
+
+            fix_list = []
+
+            prev_date = datetime.date(2000,1,1)
+
+
+            for row in good_row:
+                #print(row)
+                #print(len(row))
+
+                # getting date
+                if len(row[0]) == 10:
+                    if row[0][2] != '.':
+                        __date = datetime.datetime.strptime(row[0],'%Y.%m.%d').date()
                     else:
-                        current_client_number = client_number[1]
+                        __date = datetime.datetime.strptime(row[0],'%d.%m.%Y').date()
+
+                #print(__date)
+
+                if __date >= prev_date:
+                    prev_date = __date
+                else:
+                    fix_list.append(row)
+                    continue
+
+
+                # creating proper data lists
+                if(len(row) == 14 or len(row) == 15 or len(row) == 16):
+                    # [DATA][DATA]
+                    if (len(row[2]) == 9 or len(row[3]) == 9 ) and (len(row[10]) == 9 or len(row[11]) == 9 ):
+                        row[0] = row[0].replace(",","")
+                        if (len(row[2])== 9 and row[2].isnumeric()):
+                            first_list.append(row[:7])
+                            sec_list.append(row[7:])
+                        else:
+                            first_list.append(row[:8])
+                            sec_list.append(row[8:])
+                        #print("FIRST_LIST: ",first_list)
+                        #print("SEC_LIST",sec_list)
+                if(len(row) == 4):
+                    # [DATE][DATE]
+                    #if (row[0][4] == '.' and row[2][2] == ':') or (row[0][2] == '.' and row[2][2] == ':'):
+                        row[0] = row[0].replace(",","")
+                        row[2] = row[2].replace(",","")
+                        first_list.append(row[:2])
+                        sec_list.append(row[2:])
+                        #print("FIRST_LIST: ",first_list)
+                        #print("SEC_LIST",sec_list)
+                if(len(row) == 9 or len(row) == 10):
+                    # [DATE][DATA]
+                    if (row[0][4] == '.' and row[2][2] == ':') or (row[0][2] == '.' and row[2][2] == ':'):
+                        row[0] = row[0].replace(",","")
+                        first_list.append(row[:2])
+                        sec_list.append(row[2:])
+                        continue
+                    # [DATA][DATE] ------------------- CHECK 
+                    else:
+                    #if (row[7][4] == '.' or row[8][4] == '.') and (len(row[2]) == 9 or len(row[3]) == 9 ):
+                        row[0] = row[0].replace(",","")
+                        if (len(row[2]) == 9 and row[2].isnumeric()):
+                            first_list.append(row[:7])
+                            sec_list.append(row[7:])
+                        else:
+                            first_list.append(row[:8])
+                            sec_list.append(row[8:])
+
+            #pprint(first_list+sec_list)
+            for i in first_list:
+                final_list.append(i)
+            for i in sec_list:
+                final_list.append(i)
+
+            first_list = []
+            sec_list = []
+
+            if fix_list:
+                for row in fix_list:
+                #print(row)
+                # creating proper data lists
+                    if(len(row) == 15 or len(row) == 16):
+                        # [DATA][DATA]
+                        if (len(row[2]) == 9 or len(row[3]) == 9 ) and (len(row[10]) == 9 or len(row[11]) == 9 ):
+                            row[0] = row[0].replace(",","")
+                            if (len(row[2])== 9 and row[2].isnumeric()):
+                                first_list.append(row[:7])
+                                sec_list.append(row[7:])
+                            else:
+                                first_list.append(row[:8])
+                                sec_list.append(row[8:])
+                            #print("FIRST_LIST: ",first_list)
+                            #print("SEC_LIST",sec_list)
+                    if(len(row) == 4):
+                        # [DATE][DATE]
+                        #if (row[0][4] == '.' and row[2][2] == ':') or (row[0][2] == '.' and row[2][2] == ':'):
+                            row[0] = row[0].replace(",","")
+                            row[2] = row[2].replace(",","")
+                            first_list.append(row[:2])
+                            sec_list.append(row[2:])
+                            #print("FIRST_LIST: ",first_list)
+                            #print("SEC_LIST",sec_list)
+                    if(len(row) == 9 or len(row) == 10):
+                        # [DATE][DATA]
+                        if (row[0][4] == '.' and row[2][2] == ':') or (row[0][2] == '.' and row[2][2] == ':'):
+                            row[0] = row[0].replace(",","")
+                            first_list.append(row[:2])
+                            sec_list.append(row[2:])
+                            continue
+                        # [DATA][DATE] ------------------- CHECK 
+                        else:
+                        #if (row[7][4] == '.' or row[8][4] == '.') and (len(row[2]) == 9 or len(row[3]) == 9 ):
+                            row[0] = row[0].replace(",","")
+                            if (len(row[2]) == 9 and row[2].isnumeric()):
+                                first_list.append(row[:7])
+                                sec_list.append(row[7:])
+                            else:
+                                first_list.append(row[:8])
+                                sec_list.append(row[8:])
+
+                #pprint(first_list+sec_list)
+                for i in first_list:
+                    final_list.append(i)
+                for i in sec_list:
+                    final_list.append(i)
+
+            #print("=================================================================================================================")
+
+
+        #pprint(final_list[0:5])
+        #print("=================================================================================================================")
+        temp_date = []
+        prev_date = datetime.date(2000,1,1)
+        curr_date = ""
+        typ = ""
+        num_changed = 0
+
+        row_counter = 0
+        for x in final_list:
+            #print(x)
+            if len(x) == 2:
+                x[0] = x[0].replace(",","")
+                x[0] = x[0].replace(" ","")
+                temp_date = x
+            else:
+                if len(x) == 8:
+                    x[1:3] = [' '.join(x[1:3])]
+                if temp_date[0][2] != '.':
+                    _date = datetime.datetime.strptime(temp_date[0],'%Y.%m.%d').date()
+                else:
+                    _date = datetime.datetime.strptime(temp_date[0],'%d.%m.%Y').date()
+                _hour = datetime.datetime.strptime(x[0],'%H:%M').time()
+                #print(_date)
+                if x[3] == '1':
+                    typ = "sms"
+                else:
+                    typ = "call"
+                if(_date >= prev_date):
+                    if num_changed == 0:
                         prev_date = _date
-                        num_changed = 1
-                if(len(line_parts) == 6):
-                    if(":" in line_parts[0]):
-                        if(line_parts[0][3] == ":"):
-                            _hour = datetime.datetime.strptime(str(line_parts[0][1:6]), '%H:%M').time()
-                        else:
-                            _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
+                        current_client_number = client_number[0]
                     else:
-                        continue
-                    _network = line_parts[0][6:]
-                    if('Polska' in _network): _network = "Polska"
-                    if('Orange' in _network): _network = "Orange"
-                    if(line_parts[-4] != '1'):
-                        resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-                        row_counter+=1
-                    else:
-                        resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-                        row_counter+=1
-                if(len(line_parts) == 7):
-                    if(":" in line_parts[0]):
-                        if(line_parts[0][3] == ":"):
-                            _hour = datetime.datetime.strptime(str(line_parts[0][1:6]), '%H:%M').time()
-                        else:    
-                            _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
-                    else:
-                        continue
-                    if(len(line_parts[0]) == 7):    #Polska
-                        _network = line_parts[1]
-                    else:
-                        if(line_parts[1] == "mobile"): _network = "nju mobile"
-                        if(line_parts[1] == "P4"): _network = "sieć P4"
-                        if(line_parts[1] == "Polkomtel"): _network = "sieć Polkomtel"
-                        if(line_parts[1] == "T-mobile"): _network = "sieć T-mobile"
-
-                    if(line_parts[-4] != '1'):
-                        resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-                        row_counter+=1
-                    else:
-                        resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-                        row_counter+=1
-                if(len(line_parts) == 8 or len(line_parts) == 9):
-                    if("," not in line_parts[-1] or len(line_parts[-5]) != 9):
-                        continue
-                    if(":" in line_parts[0]):
-                        if(line_parts[0][3] == ":"):
-                            _hour = datetime.datetime.strptime(str(line_parts[0][1:6]), '%H:%M').time()
-                        else:
-                            _hour = datetime.datetime.strptime(str(line_parts[0][0:5]), '%H:%M').time()
-                    else:
-                        continue
-
-                    if(len(line_parts[3])==9):
-                        if(line_parts[2] == "mobile"):
-                            _network = "nju mobile"
-                        if(line_parts[2] == "P4"):
-                            _network = "sieć P4"
-                        if(line_parts[2] == "Polkomtel"):
-                            _network = "sieć Polkomtel"
-                        if(line_parts[2] == "T-mobile"):
-                            _network = "sieć T-mobile"
-                    else:
-                        _network = line_parts[2]+" "+line_parts[3]
-
-                    if(line_parts[-4] != '1'):
-                        resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-                        row_counter+=1
-                    else:
-                        resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+line_parts[-5]+","+line_parts[-4]+","+line_parts[-1].replace(",",".")+"\n")
-                        row_counter+=1
-        if(file_version == 2):
-            for line in lines:
-                line.strip()
-                line_parts = line.split()
-
-                if(len(line_parts) == 1):
-                    if(':' in line_parts[0] and hasNumbers(line_parts[0])):
-                        if len(temp_list) == 1:
-                            temp_list.append(line_parts)
-                        if len(temp_list) >= 2:
-                            temp_list[1] = line_parts
-                if(len(line_parts) == 2):
-                    if(len(line_parts) == 2 and '.' in line_parts[0] and line_parts[0][0].isdigit()):
-                        if temp_list:
-                                temp_list[0] = line_parts
-                        else:
-                            temp_list.append(line_parts)
-                if(len(line_parts) > 2):
-                    if(len(line_parts) == 6 or len(line_parts) == 7 or len(line_parts) == 8):
-                        if((len(line_parts[1]) == 9 or len(line_parts[2]) == 9 ) and (line_parts[1].isdigit() or line_parts[2].isdigit())):
-                            merge_net(line_parts)
-                            if len(temp_list) == 2:
-                                temp_list.append(line_parts)
-                            if len(temp_list) > 2:
-                                temp_list[2] = line_parts
-                            x = [item for sublist in temp_list for item in sublist]
-                            x[0] = x[0].rstrip(',')
-                            #print(x)
-                            if(x[0][2]=='.'):
-                                _date = datetime.datetime.strptime(str(x[0]), '%d.%m.%Y').date()
-                            else:
-                                _date = datetime.datetime.strptime(str(x[0]), '%Y.%m.%d').date()
-                            #print("[",prev_date," | ",_date,"]")
-                            if(_date >= prev_date):
-                                if num_changed == 0:
-                                    prev_date = _date
-                                    current_client_number = client_number[0]
-                                else:
-                                    prev_date = _date
-                                    current_client_number = client_number[1]
-                            else:
-                                current_client_number = client_number[1]
-                                prev_date = _date
-                                num_changed = 1
-                            _hour = datetime.datetime.strptime(str(x[2]), '%H:%M').time()
-                            _network = x[3]
-                            if(x[5] != '1'):
-                                resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",call,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
-                                row_counter+=1
-                            else:
-                                resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+_network+",sms,"+x[4]+","+x[5]+","+x[-1].replace(",",".")+"\n")
-                                row_counter+=1
+                        prev_date = _date
+                        current_client_number = client_number[1]
+                else:
+                    current_client_number = client_number[1]
+                    prev_date = _date
+                    num_changed = 1
+                #print(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+x[1]+","+typ+","+x[2]+","+x[3]+","+x[6].replace(",","."))
+                resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+x[1]+","+typ+","+x[2]+","+x[3]+","+x[6].replace(",",".")+"\n")
+                row_counter+=1
+        #pprint(final_list[0:5])
+        #print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     except Exception as e:
-        print("[ERROR] ",sys.exc_info()," |  occured in file: ",f)
+        print("[ERROR] ",line_parts,traceback.format_exc()," |  occured in file: ",f)
 
         print("Proceeding to next file...\n")
+        
     print(">>> Processed "+str(row_counter)+" rows.\n")
-
-    file.close()
-print("Program finished.")
 resultFile.close()
+
