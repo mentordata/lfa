@@ -6,11 +6,20 @@ import re
 import sys
 import os
 import traceback
+import sqlite3
+import csv
 
 # result file:
 resultFile = open("resultFile.txt", 'w',encoding='utf-8')
-resultFile.write("data,godzina,numer,siec,typ,numer_przychodzacy,liczba,dozaplaty\n")
-
+#resultFile.write("data,godzina,numer,siec,typ,numer_przychodzacy,liczba,dozaplaty\n")
+resultFile.write("date,time,number,host,type,network,period\n")
+# database
+database_name = sys.argv[2] + ".db"
+table_name = sys.argv[3]
+con = sqlite3.connect(database_name)
+cur = con.cursor()
+cur.execute("DROP TABLE IF EXISTS "+str(table_name))
+cur.execute("CREATE TABLE "+str(table_name)+" (date date, time time, number varchar(20), host varchar(20), type varchar(20), network varchar(20), period number)")
 
 
 for filename in os.listdir(sys.argv[1]):
@@ -26,7 +35,6 @@ for filename in os.listdir(sys.argv[1]):
     # GLOBAL VARIABLES
     current_number = 0
 
-    
 
     #TEMP VAR
     counter = 1
@@ -92,10 +100,13 @@ for filename in os.listdir(sys.argv[1]):
                 if(len(row_parts) == 7 or len(row_parts) == 8):
                     if (row_parts[2].isnumeric() or row_parts[3].isnumeric()) and row_parts[0][2]==':':
                         good_row.append(row_parts)
+                       
                 if(len(row_parts) >= 9 and ((row_parts[2].isdigit() and len(row_parts[2]) == 9 ) or (row_parts[3].isdigit() and len(row_parts[3]) == 9 ) or (row_parts[4].isdigit()  and len(row_parts[4]) == 9) or (row_parts[5].isdigit() and len(row_parts[5]) == 9)) and row_parts[3] != 'internet'):
                     row_parts[0] = row_parts[0].replace(",","")
                     #print(row_parts)
                     good_row.append(row_parts)
+                    
+                        
 
             fix_list = []
 
@@ -270,8 +281,14 @@ for filename in os.listdir(sys.argv[1]):
                     current_client_number = client_number[1]
                     prev_date = _date
                     num_changed = 1
+                x[1] = x[1].replace(", ","_")
                 #print(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+x[1]+","+typ+","+x[2]+","+x[3]+","+x[6].replace(",","."))
-                resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+x[1]+","+typ+","+x[2]+","+x[3]+","+x[6].replace(",",".")+"\n")
+                
+                #resultFile.write("data,godzina,numer,siec,typ,numer_przychodzacy,liczba,dozaplaty\n")
+                #resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+str(current_client_number)+","+x[1]+","+typ+","+x[2]+","+x[3]+","+x[6].replace(",",".")+"\n")
+                
+                #resultFile.write("date,time,number,host,type,network,period\n")
+                resultFile.write(_date.isoformat()+","+_hour.isoformat()+","+x[2]+","+str(current_client_number)+","+typ+","+x[1]+","+x[3]+"\n")
                 row_counter+=1
         #pprint(final_list[0:5])
         #print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
@@ -279,7 +296,23 @@ for filename in os.listdir(sys.argv[1]):
         print("[ERROR] ",line_parts,traceback.format_exc()," |  occured in file: ",f)
 
         print("Proceeding to next file...\n")
-        
+
     print(">>> Processed "+str(row_counter)+" rows.\n")
 resultFile.close()
 
+# txt to csv
+read_file = pd.read_csv (r'resultFile.txt',encoding="utf-8")
+read_file.to_csv (r'resultFile.csv',encoding="utf-8")
+
+# inserting data to database
+with open('resultFile.csv','r',encoding="utf-8") as fin:
+    dr = csv.DictReader(fin)
+    to_db = [(i['date'],i['time'],i['number'],i['host'],i['type'],i['network'],i['period']) for i in dr]
+
+cur.executemany("INSERT INTO "+str(sys.argv[3])+"(date,time,number,host,type,network,period) VALUES (?,?,?,?,?,?,?);", to_db)
+con.commit()
+
+
+#res = cur.execute('SELECT * FROM bills LIMIT 10')
+#pprint(res.fetchall())
+con.close()
